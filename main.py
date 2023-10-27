@@ -266,8 +266,3 @@ if __name__ == '__main__':
     city_trend()
     province_trend()
     print('全部完成...')
-
-
-
-
-
