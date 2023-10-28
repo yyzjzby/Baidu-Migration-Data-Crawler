@@ -1,12 +1,10 @@
-from tqdm import tqdm
-import spider as msd
 import datetime  # 导入datetime模块
 import pandas as pd
 import numpy as np
 import csv
+from tqdm import tqdm
 import os
-from codedict import CitiesCode,ProvinceCode  #调用城市编码字典
-
+import spider as msd
 
 def xin_jisuan(start,end,p,path1,c):
     if not os.path.exists(r'./temp1'):
@@ -54,7 +52,7 @@ def xin_jisuan(start,end,p,path1,c):
                     data1 = data
                     data = np.array(data)
                     # oo = -1
-                    title = []
+                    title= []
                     ll = []
                     for b in date_list:
                         try:
@@ -85,6 +83,7 @@ def xin_jisuan(start,end,p,path1,c):
                 pass
         else:
             pass
+    # print(title)
     pd.DataFrame(title).to_csv("表头.csv", encoding="gbk")
 
 
@@ -119,13 +118,47 @@ def zhuan(start,end,p,c):
             print(nnnn)
             pass
 
-# 用来计算比率
-if __name__ == '__main__':
-    start = '2023-01-01'
-    end = '2023-05-31'
-    p = 'CityCode'
-    path1= r"./ceshi1"
-    xin_jisuan(start,end,p,path1,"in")
-    zhuan(start,end,p,"in")
+def make_od(path,reader,d):
+    uu=[]
+    for sheet in tqdm(reader):
+        df = pd.read_csv(path + "\\-" + sheet+".csv")
+        # print(sheet)
+        ll = df.drop(["Unnamed: 0", "index", "Unnamed: 0.1", "Unnamed: 0.1.1", "o_city", d,"0"], axis=1)
+        ll["city_name"] = df["city_name"]+"-"+sheet
+        uu.append(ll)
+    hh = pd.read_csv(path+"\\-七台河市.csv")
+    hh = hh.drop(["Unnamed: 0", "index", "Unnamed: 0.1", "Unnamed: 0.1.1", "o_city", d,"0"], axis=1)
+    kk = hh.columns.to_list()
+    gg = pd.DataFrame(columns=kk)
+    for i in tqdm(uu):
+        gg = gg.append(i)
+    return gg
 
+def paqu(start_date, end_date, searchKey, migrationType, o_level, d_level,p,path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    else:
+        pass
+    city = pd.read_json(p+'.json')
+    NameList = list(city[searchKey].unique())
+    start_date = start_date
+    end_date = end_date
+    global dateRange
+    dateRange = pd.date_range(start_date, end_date).strftime("%Y-%m-%d").tolist()
+    for i in tqdm(NameList):
+        a = msd.GetBatchDateData(o_level, d_level, i, migrationType=migrationType,date=dateRange,cityCodePath=p+".json")
+        a.to_csv(path+"\\"+i+".csv",encoding="utf-8_sig")
 
+def zhuanOD(mm,df):
+    if not os.path.exists(r'.\各日OD'):
+        os.makedirs(r'.\各日OD')
+    else:
+        pass
+    jj = pd.DataFrame()
+    jj["O"]=df["O"]
+    jj["D"]=df["D"]
+    jj[mm]=df[mm].astype("float")
+    oo=jj.pivot_table(index="O",columns="D",values=mm)
+    oo=oo.fillna(0)
+    # mm=mm.replace("/","-")
+    oo.to_csv(".\各日OD\\"+mm+".csv",encoding="gbk")
